@@ -137,9 +137,24 @@ div[data-testid="stSlider"] div[role="slider"] { background-color: #C05800 !impo
 # ---------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------
+@st.cache_resource
+def get_writable_db_path():
+    """
+    Streamlit Community Cloud mounts the repo read-only, but SQLite needs
+    to write a small lock/journal file next to the .db even for plain
+    reads. Copy the shipped DB into a writable temp dir once per session.
+    """
+    import shutil
+    import tempfile
+    writable_path = Path(tempfile.gettempdir()) / "talentpulse.db"
+    if not writable_path.exists():
+        shutil.copy(DB_PATH, writable_path)
+    return str(writable_path)
+
+
 @st.cache_data(ttl=600)
 def load_data():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_writable_db_path())
     employees = pd.read_sql("SELECT * FROM employees", conn)
     departments = pd.read_sql("SELECT * FROM departments", conn)
     job_roles = pd.read_sql("SELECT * FROM job_roles", conn)
