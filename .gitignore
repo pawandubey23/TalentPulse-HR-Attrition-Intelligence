@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+data/talentpulse.db
+data/csv/
+models/*.pkl
+.streamlit/secrets.toml

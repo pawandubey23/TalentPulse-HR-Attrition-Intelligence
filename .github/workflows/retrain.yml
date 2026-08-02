@@ -1,0 +1,43 @@
+name: Monthly Retrain — TalentPulse
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"   # 03:00 UTC on the 1st of every month
+  workflow_dispatch: {}    # allow manual trigger from the Actions tab
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Regenerate synthetic data (swap for real ETL in production)
+        run: python data_generator/generate_data.py --n_employees 1500 --months 24
+
+      - name: Load into MySQL
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DB: ${{ secrets.MYSQL_DB }}
+        run: python data_generator/load_to_mysql.py
+
+      - name: Retrain ML models
+        run: python ml/train_models.py
+
+      - name: Commit updated model artifacts
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add models/ data/talentpulse.db
+          git commit -m "Automated monthly retrain [skip ci]" || echo "No changes to commit"
+          git push
