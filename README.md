@@ -14,7 +14,7 @@ executives, Streamlit for a live what-if simulator) — all reading from the
 same MySQL source of truth.
 
 **Repo:** `TalentPulse-HR-Attrition-Intelligence`
-**Live demo:** https://talentpulse-hr-attrition-intelligence-pawan-da.streamlit.app/
+**Live demo:** add your Streamlit Cloud URL here once deployed
 
 ---
 
@@ -62,6 +62,7 @@ same MySQL source of truth.
 | Dashboard only | Dashboard **and** a live Streamlit "what-if" risk simulator with real-time SHAP explanations |
 | Manual, one-off | Scheduled automated retraining via GitHub Actions |
 | Generic default styling | Custom branded UI — animated burnt-orange (`#C05800`) theme, hover effects, animated gauges |
+| Unrealistic "everyone active is 0% risk" data | ~18% of *currently employed* staff carry genuine at-risk signals (low satisfaction, thin raises, high overtime) without having quit — the actual premise of a flight-risk watchlist |
 
 ---
 
@@ -126,6 +127,20 @@ the `.db` even for plain reads. `streamlit_app.py` handles this automatically
 by copying the DB into a writable temp directory on first load
 (`get_writable_db_path()`) — no action needed, but worth knowing if you ever
 see an `sqlite3.OperationalError` on a from-scratch deploy elsewhere.
+
+**Stale-cache note:** if Streamlit Cloud reuses an existing container
+across a redeploy instead of spinning up a fully fresh one, the temp DB
+copy above could keep serving outdated predictions after a data update.
+`get_writable_db_path()` always overwrites the temp copy (rather than
+"copy only if missing") to prevent this — but if a deploy ever looks like
+it isn't reflecting your latest push, the fastest fix is **Manage app →
+⋮ → Reboot app** on Streamlit Cloud, which forces a completely fresh
+container rather than waiting for auto-redeploy.
+
+**Empty-watchlist safeguard:** the Flight-Risk Watchlist tab automatically
+falls back to showing the 20 highest-risk active employees if nobody
+crosses the slider threshold, instead of rendering a blank table — so the
+tab is never confusingly empty regardless of how the slider is set.
 
 ### 2. MySQL — Railway or Aiven (optional, for the "real" production setup)
 1. Create a free MySQL instance on [Railway](https://railway.app) or [Aiven](https://aiven.io).
