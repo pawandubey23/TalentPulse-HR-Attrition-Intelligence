@@ -106,6 +106,15 @@ def generate(n_employees=1500, n_months=24, attrition_rate=0.16):
     attrit_flags = [True] * n_attrit + [False] * (n_employees - n_attrit)
     random.shuffle(attrit_flags)
 
+    # Realism fix: in the real world, plenty of *currently employed* people
+    # are unhappy/at-risk without having quit yet — that's the entire point
+    # of a flight-risk watchlist. Without this, every active employee would
+    # score near-zero risk (since only people who already left carried any
+    # "at-risk" signal), making the watchlist tab empty by construction.
+    remaining_idx = [i for i in range(n_employees) if not attrit_flags[i]]
+    n_at_risk_stayed = int(len(remaining_idx) * 0.18)
+    at_risk_stayed_idx = set(random.sample(remaining_idx, n_at_risk_stayed))
+
     for emp_id in range(1, n_employees + 1):
         dept_row = departments.sample(1).iloc[0]
         dept_id = dept_row.department_id
@@ -115,6 +124,7 @@ def generate(n_employees=1500, n_months=24, attrition_rate=0.16):
         age = int(np.clip(np.random.normal(35, 9), 21, 60))
         hire_date = fake.date_between(start_date="-12y", end_date=start_month)
         will_leave = attrit_flags[emp_id - 1]
+        at_risk_stayed = (emp_id - 1) in at_risk_stayed_idx
 
         # underlying "true" risk drivers used to bias simulated behaviour
         base_satisfaction = np.random.uniform(1, 5)
@@ -124,6 +134,13 @@ def generate(n_employees=1500, n_months=24, attrition_rate=0.16):
             base_satisfaction *= np.random.uniform(0.4, 0.75)
             base_worklife *= np.random.uniform(0.5, 0.8)
             overtime_tendency = min(1, overtime_tendency + np.random.uniform(0.1, 0.4))
+        elif at_risk_stayed:
+            # Same style of risk factors as leavers, nearly as strong — an
+            # unhappy employee who hasn't (yet) resigned. This is what
+            # populates the flight-risk watchlist with real, actionable names.
+            base_satisfaction *= np.random.uniform(0.4, 0.7)
+            base_worklife *= np.random.uniform(0.5, 0.8)
+            overtime_tendency = min(1, overtime_tendency + np.random.uniform(0.1, 0.35))
 
         employees_rows.append({
             "employee_id": emp_id,
@@ -151,7 +168,12 @@ def generate(n_employees=1500, n_months=24, attrition_rate=0.16):
                 break
             hike = 0
             if i > 0 and i % 12 == 0:
-                hike = np.random.uniform(2, 6) if not will_leave else np.random.uniform(0, 2)
+                if will_leave:
+                    hike = np.random.uniform(0, 2)
+                elif at_risk_stayed:
+                    hike = np.random.uniform(0, 2.5)
+                else:
+                    hike = np.random.uniform(2, 6)
                 cur_salary *= (1 + hike / 100)
             salary_rows.append({
                 "salary_id": sal_id, "employee_id": emp_id, "effective_date": m.isoformat(),
@@ -160,7 +182,8 @@ def generate(n_employees=1500, n_months=24, attrition_rate=0.16):
             sal_id += 1
 
             if i % 6 == 0:
-                rating = int(np.clip(np.random.normal(3.3 if not will_leave else 2.6, 0.9), 1, 5))
+                rating_center = 2.6 if will_leave else (2.7 if at_risk_stayed else 3.3)
+                rating = int(np.clip(np.random.normal(rating_center, 0.9), 1, 5))
                 perf_rows.append({
                     "review_id": perf_id, "employee_id": emp_id, "review_date": m.isoformat(),
                     "rating": rating, "manager_id": mgr_row.manager_id,
