@@ -308,10 +308,20 @@ with tabs[1]:
         watch = watch[watch["department_name"].isin(dept_filter)]
     watch = watch.sort_values("risk_score", ascending=False)
 
-    st.write(f"**{len(watch)}** employees match this filter.")
+    fallback_used = False
     if len(watch) == 0:
-        st.info("No employees at this risk threshold right now — try lowering the slider. "
-                 "Most currently-employed staff sit at low predicted risk, which is expected.")
+        fallback_used = True
+        watch = emp[emp["is_active"] == 1]
+        if dept_filter:
+            watch = watch[watch["department_name"].isin(dept_filter)]
+        watch = watch.sort_values("risk_score", ascending=False).head(20)
+
+    if fallback_used:
+        st.info(f"No one crosses a {min_score:.0%} risk threshold right now — showing the "
+                 "20 highest-risk active employees instead. Try lowering the slider to set "
+                 "your own cutoff.")
+    else:
+        st.write(f"**{len(watch)}** employees match this filter.")
 
     display_cols = ["employee_id", "first_name", "last_name", "department_name", "job_role_name",
                      "risk_score", "risk_band", "top_driver_1", "top_driver_2", "top_driver_3",
