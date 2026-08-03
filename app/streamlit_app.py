@@ -142,13 +142,17 @@ def get_writable_db_path():
     """
     Streamlit Community Cloud mounts the repo read-only, but SQLite needs
     to write a small lock/journal file next to the .db even for plain
-    reads. Copy the shipped DB into a writable temp dir once per session.
+    reads. Copy the shipped DB into a writable temp dir.
+
+    Always overwrite (not "copy only if missing") — if Streamlit Cloud
+    reuses an existing container across a redeploy instead of a fully
+    fresh one, a stale copy could otherwise sit in /tmp and silently
+    serve outdated predictions after a data update.
     """
     import shutil
     import tempfile
     writable_path = Path(tempfile.gettempdir()) / "talentpulse.db"
-    if not writable_path.exists():
-        shutil.copy(DB_PATH, writable_path)
+    shutil.copy(DB_PATH, writable_path)
     return str(writable_path)
 
 
@@ -296,7 +300,7 @@ with tabs[0]:
 # =================================================================
 with tabs[1]:
     st.markdown('<div class="section-header">Live Flight-Risk Watchlist</div>', unsafe_allow_html=True)
-    min_score = st.slider("Minimum risk score", 0.0, 1.0, 0.5, 0.05)
+    min_score = st.slider("Minimum risk score", 0.0, 1.0, 0.10, 0.01)
     dept_filter = st.multiselect("Filter by department", sorted(emp["department_name"].unique()))
 
     watch = emp[(emp["is_active"] == 1) & (emp["risk_score"] >= min_score)]
@@ -305,6 +309,9 @@ with tabs[1]:
     watch = watch.sort_values("risk_score", ascending=False)
 
     st.write(f"**{len(watch)}** employees match this filter.")
+    if len(watch) == 0:
+        st.info("No employees at this risk threshold right now — try lowering the slider. "
+                 "Most currently-employed staff sit at low predicted risk, which is expected.")
 
     display_cols = ["employee_id", "first_name", "last_name", "department_name", "job_role_name",
                      "risk_score", "risk_band", "top_driver_1", "top_driver_2", "top_driver_3",
