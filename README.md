@@ -14,7 +14,7 @@ executives, Streamlit for a live what-if simulator) — all reading from the
 same MySQL source of truth.
 
 **Repo:** `TalentPulse-HR-Attrition-Intelligence`
-**Live demo:** add your Streamlit Cloud URL here once deployed
+**Live demo:** https://talentpulse-hr-attrition-intelligence-pawan-da.streamlit.app
 
 ---
 
@@ -66,6 +66,17 @@ same MySQL source of truth.
 
 ---
 
+## Documentation
+
+| Doc | What it's for |
+|---|---|
+| [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | Tab-by-tab walkthrough of the live app — what each chart means and how to use it |
+| [`docs/INTERVIEW_PREP.md`](docs/INTERVIEW_PREP.md) | Full interview Q&A — data/database, ML models, Power BI, deployment, debugging stories, and a term glossary |
+| [`docs/PROJECT_OVERVIEW_AND_PITCH.md`](docs/PROJECT_OVERVIEW_AND_PITCH.md) | Quick project summary, condensed Q&A, and a ready-to-say 1–2 minute spoken pitch (plus a 60-second backup version) |
+| [`powerbi/POWERBI_GUIDE.md`](powerbi/POWERBI_GUIDE.md) | Power BI setup guide — DAX measures and page-by-page build instructions |
+
+---
+
 ## Project structure
 
 ```
@@ -77,6 +88,10 @@ talentpulse/
 ├── ml/train_models.py          # classification, SHAP, clustering, survival, sentiment
 ├── app/streamlit_app.py        # interactive dashboard + what-if simulator
 ├── powerbi/POWERBI_GUIDE.md    # DAX measures + page-by-page build guide
+├── docs/
+│   ├── USER_GUIDE.md              # tab-by-tab walkthrough of the live app
+│   ├── INTERVIEW_PREP.md          # full interview Q&A, in plain language
+│   └── PROJECT_OVERVIEW_AND_PITCH.md  # quick summary + 1-2 min spoken pitch
 ├── .github/workflows/retrain.yml  # monthly automated retraining
 ├── requirements.txt
 ├── data/talentpulse.db         # trained SQLite DB, committed so the
